@@ -78,14 +78,14 @@ def quit():
     running = False
 
 
-def run(start_state):
+def run(start_state, frame_time):
     global running, stack
     running = True
     stack = [start_state]
     start_state.enter()
     while (running):
         stack[-1].handle_events()
-        stack[-1].update()
+        stack[-1].update(frame_time)
         stack[-1].draw()
     # repeatedly delete the top of the stack
     while (len(stack) > 0):

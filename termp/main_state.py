@@ -39,11 +39,11 @@ def handle_events():
                 game_framework.change_state(start_state)
             else:
                 hero.handle_event(event)
-def update():
-    hero.update()
+def update(frame_time):
+    hero.update(frame_time)
     if view.x < 3300:
-        ground.update()
-        view.update()
+        ground.update(frame_time)
+        view.update(frame_time)
 
 def draw_scene():
     view.draw()
