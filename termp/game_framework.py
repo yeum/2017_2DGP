@@ -1,3 +1,6 @@
+import time
+
+
 class GameState:
     def __init__(self, state):
         self.enter = state.enter
@@ -15,7 +18,7 @@ class TestGameState:
     def __init__(self, name):
         self.name = name
 
-    def enter(self):
+    def enter(self) -> object:
         print("State [%s] Entered" % self.name)
 
     def exit(self):
@@ -27,14 +30,14 @@ class TestGameState:
     def resume(self):
         print("State [%s] Resumed" % self.name)
 
-    def handle_events(self):
-        print("State [%s] handle_events" % self.name)
+    def handle_events(self, frame_time):
+        print("State [%s] handle_events(%f)" % (self.name, frame_time))
 
-    def update(self):
-        print("State [%s] update" % self.name)
+    def update(self, frame_time):
+        print("State [%s] update(%f)" % (self.name, frame_time))
 
-    def draw(self):
-        print("State [%s] draw" % self.name)
+    def draw(self, frame_time):
+        print("State [%s] draw(%f)" % (self.name, frame_time))
 
 
 
@@ -78,20 +81,27 @@ def quit():
     running = False
 
 
-def run(start_state, frame_time):
+def run(start_state):
     global running, stack
     running = True
     stack = [start_state]
     start_state.enter()
+    current_time = time.clock()
     while (running):
-        stack[-1].handle_events()
+        frame_time = time.clock() - current_time
+        current_time += frame_time
+        stack[-1].handle_events(frame_time)
         stack[-1].update(frame_time)
-        stack[-1].draw()
+        stack[-1].draw(frame_time)
     # repeatedly delete the top of the stack
     while (len(stack) > 0):
         stack[-1].exit()
         stack.pop()
 
+
+def reset_time():
+    global current_time
+    current_time = time.clock()
 
 def test_game_framework():
     start_state = TestGameState('StartState')

@@ -19,6 +19,7 @@ boss = None
 
 def enter():
     global hero, ground, view
+    open_canvas()
     hero = Hero()
     ground = Ground()
     view = View()
@@ -29,7 +30,8 @@ def exit():
     del(ground)
     del(view)
 
-def handle_events():
+def handle_events(frame_time):
+    global boss
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
@@ -38,21 +40,27 @@ def handle_events():
             if (event.type, event.key) == (SDL_KEYDOWN, SDLK_ESCAPE):
                 game_framework.change_state(start_state)
             else:
-                hero.handle_event(event)
+                hero.handle_event(event, boss)
+
 def update(frame_time):
+    global top
+    if hero.height() > 300:
+        top = True
+    elif hero.height() < 128:
+        top = None
     hero.update(frame_time)
     if view.x < 3300:
         ground.update(frame_time)
         view.update(frame_time)
 
-def draw_scene():
+def draw_scene(frame_time):
     view.draw()
     ground.draw()
     hero.draw()
 
-def draw():
+def draw(frame_time):
     clear_canvas()
-    draw_scene()
+    draw_scene(frame_time)
     update_canvas()
 
 

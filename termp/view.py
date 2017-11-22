@@ -15,7 +15,7 @@ class View:
 
     def __init__(self):
         self.image = load_image('view.png')
-        self.x, y = 1750, 300
+        self.x, self.y = 1750, 300
 
     def update(self, frame_time):
         distance = View.RUN_SPEED_PPS * frame_time

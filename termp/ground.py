@@ -15,7 +15,7 @@ class Ground:
 
     def __init__(self):
         self.image = load_image('ground.png')
-        self.x, y = 1750, 64
+        self.x, self.y = 1750, 64
 
     def update(self, frame_time):
         distance = Ground.RUN_SPEED_PPS * frame_time

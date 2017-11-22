@@ -2,6 +2,10 @@ import random
 
 from pico2d import *
 
+jump = None
+top = None
+
+
 class Hero:
     PIXEL_PER_METER = (10.0 / 0.2)           # 10 pixel 20 cm
     RUN_SPEED_KMPH = 20.0                    # Km / Hour
@@ -14,8 +18,6 @@ class Hero:
     FRAMES_PER_ACTION = 8
 
     image = None
-    jump = None
-    top = None
 
     RIGHT_RUN, LEFT_RUN, RIGHT_DEATH, LEFT_DEATH, RIGHT_STAND, LEFT_STAND, RIGHT_ATTACK, LEFT_ATTACK, RIGHT_JUMP, LEFT_JUMP, RIGHT_SLIDE, LEFT_SLIDE = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 
@@ -31,6 +33,8 @@ class Hero:
 
 
     def update(self, frame_time):
+        global top, jump
+
         def clamp(minimum, x, maximum):
             return max(minimum, min(x, maximum))
 
@@ -42,18 +46,14 @@ class Hero:
 
         self.x = clamp(0, self.x, 800)
 
-        global top
-
-        if Hero.y > 300:
-            top = True
-        elif Hero.y < 128:
-            top = None
-
         if jump:
-            Hero.y += distance
-        else:
-            Hero.y -= distance
+            if top:
+                Hero.y -= distance
+            else:
+                Hero.y += distance
 
+    def height(self):
+        return self.y
 
 
     def draw(self):
@@ -65,8 +65,8 @@ class Hero:
     def get_bb(self):
         return self.x - 20, self.y - 50, self.x + 20, self.y + 50
 
-    def handle_event(self, event):
-        global boss, jump
+    def handle_event(self, event, boss):
+        global jump
 
         if (event.type, event.key, boss) == (SDL_KEYDOWN, SDLK_LEFT):
             if self.state in (self.RIGHT_STAND, self.LEFT_STAND, self.RIGHT_RUN):

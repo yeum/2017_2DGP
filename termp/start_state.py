@@ -22,6 +22,7 @@ def destroy_world():
 def enter():
     global image
     open_canvas()
+    game_framework.reset_time()
     image = load_image('start.png')
     create_world()
 
@@ -33,14 +34,14 @@ def exit():
     close_canvas()
 
 
-def draw():
+def draw(frame_time):
     global image
     clear_canvas()
     image.draw(400, 300)
     update_canvas()
 
 
-def handle_events():
+def handle_events(frame_time):
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
@@ -53,7 +54,7 @@ def handle_events():
 
 
 
-def update():
+def update(frame_time):
     pass
 
 def pause(): pass
