@@ -21,7 +21,6 @@ def destroy_world():
 
 def enter():
     global image
-    open_canvas()
     game_framework.reset_time()
     image = load_image('start.png')
     create_world()
@@ -31,7 +30,6 @@ def exit():
     global image
     del(image)
     destroy_world()
-    close_canvas()
 
 
 def draw(frame_time):

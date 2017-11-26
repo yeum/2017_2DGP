@@ -1,0 +1,13 @@
+{
+    "1" : {"StartState":"ALIVE", "x":520},
+	"2" : {"StartState":"ALIVE", "x":770},
+	"3" : {"StartState":"ALIVE", "x":1290},
+	"4" : {"StartState":"ALIVE", "x":2000},
+	"5" : {"StartState":"ALIVE", "x":2690},
+	"6" : {"StartState":"ALIVE", "x":3210},
+	"7" : {"StartState":"ALIVE", "x":3760}
+}
+
+
+
+
