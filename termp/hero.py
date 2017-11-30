@@ -15,7 +15,7 @@ class Hero:
 
     TIME_PER_ACTION = 0.5
     ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
-    FRAMES_PER_ACTION = 8
+    FRAMES_PER_ACTION = 4
 
     image = None
 
@@ -24,10 +24,10 @@ class Hero:
     def __init__(self):
         self.x, self.y = 50, 128 + 35
         self.frame = 0
-        self.life_time = 0.0
         self.total_frames = 0.0
         self.dir = 0
         self.state = self.RIGHT_RUN
+        self.y_for_collide = 35
         if Hero.image == None:
             Hero.image = load_image('character_sheet2.png')
 
@@ -38,7 +38,6 @@ class Hero:
         def clamp(minimum, x, maximum):
             return max(minimum, min(x, maximum))
 
-        self.life_time += frame_time
         distance = Hero.RUN_SPEED_PPS * frame_time
         self.total_frames += Hero.FRAMES_PER_ACTION * Hero.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 4
@@ -49,9 +48,9 @@ class Hero:
         if jump:
             self.is_top(boss)
             if top:
-                self.y -= distance
+                self.y -= distance+0.3
             else:
-                self.y += distance
+                self.y += distance+0.3
 
     def get_height(self):
         return self.y
@@ -64,7 +63,7 @@ class Hero:
         draw_rectangle(*self.get_bb())
 
     def get_bb(self):
-        return self.x - 20, self.y - 50, self.x + 20, self.y + 50
+        return self.x - 20, self.y - self.y_for_collide, self.x + 20, self.y + self.y_for_collide
 
     def handle_event(self, event, boss):
         global jump
@@ -94,21 +93,27 @@ class Hero:
         elif (event.type, event.key) == (SDL_KEYDOWN, SDLK_DOWN):
             if self.state in (self.RIGHT_RUN, self.RIGHT_STAND):
                 self.state = self.RIGHT_SLIDE
+                self.y_for_collide -= 30
                 self.dir = 0
             elif self.state in (self.LEFT_RUN, self.LEFT_STAND):
                 self.state = self.LEFT_SLIDE
+                self.y_for_collide -= 30
                 self.dir = 0
         elif (event.type, event.key) == (SDL_KEYUP, SDLK_DOWN):
             if self.state in (self.RIGHT_SLIDE,):
                 if boss:
                     self.state = self.RIGHT_STAND
+                    self.y_for_collide += 30
                 else:
                     self.state = self.RIGHT_RUN
+                    self.y_for_collide += 30
             elif self.state in (self.LEFT_SLIDE,):
                 if boss:
                     self.state = self.LEFT_STAND
+                    self.y_for_collide += 30
                 else:
                     self.state = self.LEFT_RUN
+                    self.y_for_collide += 30
         elif (event.type, event.key) == (SDL_KEYDOWN, SDLK_SPACE):
             if self.state in (self.RIGHT_RUN, self.RIGHT_STAND):
                 self.state = self.RIGHT_ATTACK
@@ -130,7 +135,7 @@ class Hero:
 
     def is_top(self, boss):
         global jump, top
-        if self.get_height() > 250:
+        if self.get_height() > 270:
             top = True
         elif self.get_height() < 128+35:
             self.y = 128+35
