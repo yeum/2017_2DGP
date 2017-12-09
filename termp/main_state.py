@@ -9,15 +9,17 @@ import start_state
 from hero import Hero
 from ground import Ground
 from view import View
-from char_skill_fireball import Fireball
+from boss import Boss
 
 name = "MainState"
 
 hero = None
 ground = None
 view = None
-boss = None
+isBoss = None
 collide_box_on = None
+
+fireballs = []
 
 class Stone:
     image = None
@@ -109,9 +111,9 @@ class Monster:
     def __init__(self):
         self.x, self.y = 0, 158
         self.frame = 0
+        self.num = 0
         self.state = self.ALIVE
         self.total_frames = 0.0
-        self.num = 0
         if Monster.image == None:
             Monster.image = load_image('obs_monster.png')
 
@@ -135,6 +137,7 @@ class Tired:
 
     def __init__(self):
         self.x, self.y = hero.x, hero.y+50
+        self.degree = 0
         if Tired.image == None:
             Tired.image = load_image('tired.png')
 
@@ -142,30 +145,27 @@ class Tired:
         self.x, self.y = hero.x, hero.y+50
 
     def draw(self):
-        self.image.draw(self.x, self.y)
-
-    def draw_bb(self):
-        draw_rectangle(*self.get_bb())
-
-    def get_bb(self):
-        return self.x - 10, self.y - 10, self.x + 10, self.y + 10
-
+        self.image.clip_draw(0, 0, self.degree, 20, self.x, self.y)
 
 def enter():
-    global hero, ground, view, stones, mons, drinks, booms
+    global hero, ground, view, stones, mons, drinks, booms, tired, boss
     stones = create_stones()
     mons = create_mons()
     drinks = create_drinks()
     booms = create_booms()
+    boss = Boss()
     hero = Hero()
     ground = Ground()
     view = View()
+    tired = Tired()
 
 def exit():
-    global hero, ground, view, mons, stones, booms, drinks, fireballs
+    global hero, ground, view, mons, stones, booms, drinks, fireballs, tired, boss
     del(hero)
     del(ground)
     del(view)
+    del(tired)
+    del(boss)
     for obj_mon in mons:
         del(obj_mon)
     for obj_stone in stones:
@@ -178,7 +178,7 @@ def exit():
         del(skill_fireball)
 
 def handle_events(frame_time):
-    global boss, collide_box_on
+    global isBoss, collide_box_on
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
@@ -192,11 +192,30 @@ def handle_events(frame_time):
                 else:
                     collide_box_on = True
             else:
-                hero.handle_event(event, boss)
+                hero.handle_event(event, isBoss)
 
 def update(frame_time):
-    global boss
-    hero.update(frame_time, boss)
+    global isBoss
+    hero.update(frame_time, isBoss)
+    tired.update(frame_time)
+    boss.update(frame_time, isBoss)
+    for skill_fireball in fireballs:
+        for obj_stone in stones:
+            if collide(skill_fireball, obj_stone):
+                stones.remove(obj_stone)
+                fireballs.remove(skill_fireball)
+        for obj_mon in mons:
+            if collide(skill_fireball, obj_mon):
+                mons.remove(obj_mon)
+                fireballs.remove(skill_fireball)
+        for obj_boom in booms:
+            if collide(skill_fireball, obj_boom):
+                booms.remove(obj_boom)
+                fireballs.remove(skill_fireball)
+        for obj_drink in drinks:
+            if collide(skill_fireball, obj_drink):
+                drinks.update(obj_drink)
+                fireballs.remove(skill_fireball)
     if view.x > -950:
         ground.update(frame_time)
         view.update(frame_time)
@@ -214,40 +233,28 @@ def update(frame_time):
         for obj_stone in stones:
             if collide(hero, obj_stone):
                 stones.remove(obj_stone)
+                tired.degree += 20
         for obj_mon in mons:
             if collide(hero, obj_mon):
                 mons.remove(obj_mon)
+                tired.degree += 20
         for obj_boom in booms:
             if collide(hero, obj_boom):
                 booms.remove(obj_boom)
+                tired.degree += 20
         for obj_drink in drinks:
             if collide(hero, obj_drink):
                 drinks.update(obj_drink)
-
-        for skill_fireball in fireballs:
-            for obj_stone in stones:
-                if collide(skill_fireball, obj_stone):
-                    stones.remove(obj_stone)
-                    fireballs.remove(skill_fireball)
-            for obj_mon in mons:
-                if collide(skill_fireball, obj_mon):
-                    mons.remove(obj_mon)
-                    fireballs.remove(skill_fireball)
-            for obj_boom in booms:
-                if collide(skill_fireball, obj_boom):
-                    booms.remove(obj_boom)
-                    fireballs.remove(skill_fireball)
-            for obj_drink in drinks:
-                if collide(skill_fireball, obj_drink):
-                    drinks.update(obj_drink)
-                    fireballs.remove(skill_fireball)
+                tired.degree -= 30
     else:
-        boss = True
+        isBoss = True
 
 def draw_scene(frame_time):
     view.draw()
     ground.draw()
     hero.draw()
+    tired.draw()
+    boss.draw()
     for obj_stone in stones:
         obj_stone.draw()
     for obj_mon in mons:
@@ -256,6 +263,8 @@ def draw_scene(frame_time):
         obj_boom.draw()
     for obj_drink in drinks:
         obj_drink.draw()
+    for skill_fireball in fireballs:
+        skill_fireball.draw()
 
     if collide_box_on:
         hero.draw_bb()
@@ -267,6 +276,8 @@ def draw_scene(frame_time):
             obj_boom.draw_bb()
         for obj_drink in drinks:
             obj_drink.draw_bb()
+        for fireball in fireballs:
+            fireball.draw_bb()
 
 def draw(frame_time):
     clear_canvas()
