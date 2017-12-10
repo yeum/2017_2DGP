@@ -16,9 +16,10 @@ class Ground:
         self.image = load_image('map_ground.png')
         self.x, self.y = 1750, 64
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Ground.RUN_SPEED_PPS * frame_time
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.draw(self.x, self.y)

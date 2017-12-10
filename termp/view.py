@@ -15,10 +15,14 @@ class View:
     def __init__(self):
         self.image = load_image('map_view.png')
         self.x, self.y = 1750, 300 + 64
+        self.bgm = load_music('The load.wav')
+        self.bgm.set_volume(64)
+        self.bgm.repeat_play()
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = View.RUN_SPEED_PPS * frame_time
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.draw(self.x, self.y)

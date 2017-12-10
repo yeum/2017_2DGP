@@ -34,9 +34,10 @@ class Stone:
         if Stone.image == None:
             Stone.image = load_image('obs_stone.png')
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Ground.RUN_SPEED_PPS * frame_time
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.draw(self.x, self.y)
@@ -60,9 +61,10 @@ class Boom:
         if Boom.image == None:
             Boom.image = load_image('obs_boom.png')
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Ground.RUN_SPEED_PPS * frame_time
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.draw(self.x, self.y)
@@ -86,9 +88,10 @@ class Drink:
         if Drink.image == None:
             Drink.image = load_image('obs_drink.png')
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Ground.RUN_SPEED_PPS * frame_time
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.draw(self.x, self.y)
@@ -117,11 +120,12 @@ class Monster:
         if Monster.image == None:
             Monster.image = load_image('obs_monster.png')
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Ground.RUN_SPEED_PPS * frame_time
         self.total_frames += Monster.FRAMES_PER_ACTION * Monster.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 6
-        self.x -= distance
+        if isBoss == None:
+            self.x -= distance
 
     def draw(self):
         self.image.clip_draw(self.frame * 80, 0, 80, 60, self.x, self.y)
@@ -178,7 +182,7 @@ def exit():
         del(skill_fireball)
 
 def handle_events(frame_time):
-    global isBoss, collide_box_on
+    global isBoss, collide_box_on, fireballs
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
@@ -192,62 +196,70 @@ def handle_events(frame_time):
                 else:
                     collide_box_on = True
             else:
-                hero.handle_event(event, isBoss)
+                hero.handle_event(event, isBoss, fireballs)
 
 def update(frame_time):
     global isBoss
+
+    if view.x <= -950:
+        isBoss = True
+
     hero.update(frame_time, isBoss)
     tired.update(frame_time)
     boss.update(frame_time, isBoss)
+    ground.update(frame_time, isBoss)
+    view.update(frame_time, isBoss)
+
+    for obj_stone in stones:
+        if collide(hero, obj_stone):
+            stones.remove(obj_stone)
+            hero.crush()
+            tired.degree += 20
+        else:
+            obj_stone.update(frame_time, isBoss)
+
+    for obj_mon in mons:
+        if collide(hero, obj_mon):
+            mons.remove(obj_mon)
+            hero.crush()
+            tired.degree += 20
+        else:
+            obj_mon.update(frame_time, isBoss)
+
+    for obj_boom in booms:
+        if collide(hero, obj_boom):
+            booms.remove(obj_boom)
+            hero.crush()
+            tired.degree += 20
+        else:
+            obj_boom.update(frame_time, isBoss)
+
+    for obj_drink in drinks:
+        if collide(hero, obj_drink):
+            drinks.remove(obj_drink)
+            hero.eat(obj_drink)
+            tired.degree -= 30
+        else:
+            obj_drink.update(frame_time, isBoss)
+
+    for skill_fireball in fireballs:
+        skill_fireball.update(frame_time, isBoss)
+
+
     for skill_fireball in fireballs:
         for obj_stone in stones:
             if collide(skill_fireball, obj_stone):
-                stones.remove(obj_stone)
                 fireballs.remove(skill_fireball)
+                hero.hit(skill_fireball)
         for obj_mon in mons:
             if collide(skill_fireball, obj_mon):
                 mons.remove(obj_mon)
                 fireballs.remove(skill_fireball)
+                hero.hit(skill_fireball)
         for obj_boom in booms:
             if collide(skill_fireball, obj_boom):
-                booms.remove(obj_boom)
                 fireballs.remove(skill_fireball)
-        for obj_drink in drinks:
-            if collide(skill_fireball, obj_drink):
-                drinks.update(obj_drink)
-                fireballs.remove(skill_fireball)
-    if view.x > -950:
-        ground.update(frame_time)
-        view.update(frame_time)
-        for obj_stone in stones:
-            obj_stone.update(frame_time)
-        for obj_mon in mons:
-            obj_mon.update(frame_time)
-        for obj_boom in booms:
-            obj_boom.update(frame_time)
-        for obj_drink in drinks:
-            obj_drink.update(frame_time)
-        for skill_fireball in fireballs:
-            skill_fireball.update(frame_time)
-
-        for obj_stone in stones:
-            if collide(hero, obj_stone):
-                stones.remove(obj_stone)
-                tired.degree += 20
-        for obj_mon in mons:
-            if collide(hero, obj_mon):
-                mons.remove(obj_mon)
-                tired.degree += 20
-        for obj_boom in booms:
-            if collide(hero, obj_boom):
-                booms.remove(obj_boom)
-                tired.degree += 20
-        for obj_drink in drinks:
-            if collide(hero, obj_drink):
-                drinks.update(obj_drink)
-                tired.degree -= 30
-    else:
-        isBoss = True
+                hero.hit(skill_fireball)
 
 def draw_scene(frame_time):
     view.draw()
@@ -339,7 +351,7 @@ def create_booms():
         obj_boom.num = num
         obj_boom.x = booms_data[num]['x']
         obj_boom.state = booms_data[num]['StartState']
-        stones.append(obj_boom)
+        booms.append(obj_boom)
 
     return booms
 
@@ -355,7 +367,7 @@ def create_drinks():
         obj_drink.num = num
         obj_drink.x = drinks_data[num]['x']
         obj_drink.state = drinks_data[num]['StartState']
-        stones.append(obj_drink)
+        drinks.append(obj_drink)
 
     return drinks
 

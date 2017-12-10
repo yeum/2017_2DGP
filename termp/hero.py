@@ -9,7 +9,7 @@ class Fireball:
     image = None
 
     PIXEL_PER_METER = (10.0 / 0.2)  # 10 pixel 20 cm
-    RUN_SPEED_KMPH = 20.0  # Km / Hour
+    RUN_SPEED_KMPH = 30.0  # Km / Hour
     RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
     RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
     RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
@@ -25,8 +25,10 @@ class Fireball:
         if Fireball.image == None:
             Fireball.image = load_image('fireball.png')
 
-    def update(self, frame_time):
+    def update(self, frame_time, isBoss):
         distance = Fireball.RUN_SPEED_PPS * frame_time
+        if isBoss:
+            distance /= 3
         self.total_frames += Fireball.FRAMES_PER_ACTION * Fireball.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 4
         self.x += distance
@@ -53,6 +55,9 @@ class Hero:
     FRAMES_PER_ACTION = 4
 
     image = None
+    hit_sound = None
+    eat_sound = None
+    crush_sound = None
 
     RIGHT_RUN, LEFT_RUN, RIGHT_DEATH, LEFT_DEATH, RIGHT_STAND, LEFT_STAND, RIGHT_ATTACK, LEFT_ATTACK, RIGHT_JUMP, LEFT_JUMP, RIGHT_SLIDE, LEFT_SLIDE = 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
@@ -65,7 +70,24 @@ class Hero:
         self.y_for_collide = 35
         if Hero.image == None:
             Hero.image = load_image('character_sheet2.png')
+        if Hero.hit_sound == None:
+            Hero.hit_sound = load_wav('hitsound.wav')
+            Hero.hit_sound.set_volume(32)
+        if Hero.eat_sound == None:
+            Hero.eat_sound = load_wav('reduce.wav')
+            Hero.eat_sound.set_volume(32)
+        if Hero.crush_sound == None:
+            Hero.crush_sound = load_wav('increase.wav')
+            Hero.crush_sound.set_volume(32)
 
+    def hit(self, skill_fireball):
+        self.hit_sound.play()
+
+    def eat(self, obj_drink):
+        self.eat_sound.play()
+
+    def crush(self):
+        self.crush_sound.play()
 
     def update(self, frame_time, boss):
         global top, jump
@@ -100,8 +122,8 @@ class Hero:
     def get_bb(self):
         return self.x - 20, self.y - self.y_for_collide, self.x + 20, self.y + self.y_for_collide
 
-    def handle_event(self, event, isBoss):
-        global jump, fireballs
+    def handle_event(self, event, isBoss, fireballs):
+        global jump
 
         if (event.type, event.key) == (SDL_KEYDOWN, SDLK_LEFT) and isBoss:
             if self.state in (self.RIGHT_STAND, self.LEFT_STAND, self.RIGHT_RUN):
