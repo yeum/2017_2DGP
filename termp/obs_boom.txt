@@ -1,5 +1,5 @@
 {
     "1" : {"StartState":"ALIVE", "x":1750},
 	"2" : {"StartState":"ALIVE", "x":2250},
-	"3" : {"StartState":"ALIVE", "x":4000}
+	"3" : {"StartState":"ALIVE", "x":3950}
 }

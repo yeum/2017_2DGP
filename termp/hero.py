@@ -18,10 +18,14 @@ class Fireball:
     ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
     FRAMES_PER_ACTION = 4
 
+    LEFT, RIGHT  = 0, 1
+
     def __init__(self):
         self.x, self.y = 0, 0
         self.frame = 0
         self.total_frames = 0.0
+        self.dir = 1
+        self.state = self.RIGHT
         if Fireball.image == None:
             Fireball.image = load_image('fireball.png')
 
@@ -29,10 +33,10 @@ class Fireball:
         distance = Fireball.RUN_SPEED_PPS * frame_time
         self.total_frames += Fireball.FRAMES_PER_ACTION * Fireball.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 4
-        self.x += distance
+        self.x += self.dir*distance
 
     def draw(self):
-        self.image.clip_draw(self.frame * 135, 0, 135, 45, self.x, self.y)
+        self.image.clip_draw(self.frame * 135, self.state * 45, 135, 45, self.x, self.y)
 
     def draw_bb(self):
         draw_rectangle(*self.get_bb())
@@ -231,6 +235,8 @@ class Hero:
                 skill_fireball = Fireball()
                 skill_fireball.x = self.x
                 skill_fireball.y = self.y
+                skill_fireball.dir = 1
+                skill_fireball.state = skill_fireball.RIGHT
                 fireballs.append(skill_fireball)
                 self.dir = 0
             elif self.state in (self.LEFT_RUN, self.LEFT_STAND):
@@ -238,6 +244,8 @@ class Hero:
                 skill_fireball = Fireball()
                 skill_fireball.x = self.x
                 skill_fireball.y = self.y
+                skill_fireball.dir = -1
+                skill_fireball.state = skill_fireball.LEFT
                 fireballs.append(skill_fireball)
                 self.dir = 0
         elif (event.type, event.key) == (SDL_KEYUP, SDLK_SPACE):
