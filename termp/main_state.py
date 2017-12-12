@@ -6,7 +6,7 @@ from pico2d import *
 
 import game_framework
 import start_state
-from hero import Hero
+from hero import Hero, Char_Effect
 from ground import Ground
 from view import View
 from boss import Boss
@@ -20,6 +20,7 @@ isBoss = None
 collide_box_on = None
 
 fireballs = []
+effects = []
 
 class Stone:
     image = None
@@ -136,23 +137,8 @@ class Monster:
     def get_bb(self):
         return self.x - 25, self.y - 15, self.x + 10, self.y + 15
 
-class Tired:
-    image = None
-
-    def __init__(self):
-        self.x, self.y = hero.x, hero.y+50
-        self.degree = 0
-        if Tired.image == None:
-            Tired.image = load_image('tired.png')
-
-    def update(self, frame_time):
-        self.x, self.y = hero.x, hero.y+50
-
-    def draw(self):
-        self.image.clip_draw(0, 0, self.degree, 20, self.x, self.y)
-
 def enter():
-    global hero, ground, view, stones, mons, drinks, booms, tired, boss
+    global hero, ground, view, stones, mons, drinks, booms, boss
     stones = create_stones()
     mons = create_mons()
     drinks = create_drinks()
@@ -161,14 +147,13 @@ def enter():
     hero = Hero()
     ground = Ground()
     view = View()
-    tired = Tired()
+
 
 def exit():
-    global hero, ground, view, mons, stones, booms, drinks, fireballs, tired, boss
+    global hero, ground, view, mons, stones, booms, drinks, fireballs, boss, effects
     del(hero)
     del(ground)
     del(view)
-    del(tired)
     del(boss)
     for obj_mon in mons:
         del(obj_mon)
@@ -180,6 +165,8 @@ def exit():
         del(obj_drink)
     for skill_fireball in fireballs:
         del(skill_fireball)
+    for skill_effect in effects:
+        del(skill_effect)
 
 def handle_events(frame_time):
     global isBoss, collide_box_on, fireballs
@@ -205,67 +192,100 @@ def update(frame_time):
         isBoss = True
 
     hero.update(frame_time, isBoss)
-    tired.update(frame_time)
-    boss.update(frame_time, isBoss)
-    ground.update(frame_time, isBoss)
-    view.update(frame_time, isBoss)
-
-    for obj_stone in stones:
-        if collide(hero, obj_stone):
-            stones.remove(obj_stone)
-            hero.crush()
-            tired.degree += 20
-        else:
-            obj_stone.update(frame_time, isBoss)
-
-    for obj_mon in mons:
-        if collide(hero, obj_mon):
-            mons.remove(obj_mon)
-            hero.crush()
-            tired.degree += 20
-        else:
-            obj_mon.update(frame_time, isBoss)
-
-    for obj_boom in booms:
-        if collide(hero, obj_boom):
-            booms.remove(obj_boom)
-            hero.crush()
-            tired.degree += 20
-        else:
-            obj_boom.update(frame_time, isBoss)
-
-    for obj_drink in drinks:
-        if collide(hero, obj_drink):
-            drinks.remove(obj_drink)
-            hero.eat(obj_drink)
-            tired.degree -= 30
-        else:
-            obj_drink.update(frame_time, isBoss)
-
-    for skill_fireball in fireballs:
-        skill_fireball.update(frame_time, isBoss)
 
 
-    for skill_fireball in fireballs:
+    if hero.state not in (hero.RIGHT_DEATH, hero.LEFT_DEATH):
+        boss.update(frame_time, isBoss)
+        ground.update(frame_time, isBoss)
+        view.update(frame_time, isBoss)
+
         for obj_stone in stones:
-            if collide(skill_fireball, obj_stone):
-                fireballs.remove(skill_fireball)
-                hero.hit(skill_fireball)
+            if collide(hero, obj_stone):
+                stones.remove(obj_stone)
+                hero.crush()
+                hero.tired.degree += 20
+            else:
+                obj_stone.update(frame_time, isBoss)
+
         for obj_mon in mons:
-            if collide(skill_fireball, obj_mon):
+            if collide(hero, obj_mon):
                 mons.remove(obj_mon)
-                fireballs.remove(skill_fireball)
-                hero.hit(skill_fireball)
+                hero.crush()
+                hero.tired.degree += 20
+            else:
+                obj_mon.update(frame_time, isBoss)
+
         for obj_boom in booms:
-            if collide(skill_fireball, obj_boom):
-                fireballs.remove(skill_fireball)
-                hero.hit(skill_fireball)
+            if collide(hero, obj_boom):
+                booms.remove(obj_boom)
+                hero.crush()
+                hero.tired.degree += 20
+            else:
+                obj_boom.update(frame_time, isBoss)
+
+        for obj_drink in drinks:
+            if collide(hero, obj_drink):
+                drinks.remove(obj_drink)
+                hero.eat()
+                hero.tired.degree -= 30
+                if hero.tired.degree < 0:
+                    hero.tired.degree = 0
+            else:
+                obj_drink.update(frame_time, isBoss)
+
+        for skill_fireball in fireballs:
+            skill_fireball.update(frame_time, isBoss)
+
+
+        for skill_fireball in fireballs:
+            for obj_stone in stones:
+                if collide(skill_fireball, obj_stone):
+                    fireballs.remove(skill_fireball)
+                    hero.hit()
+                    skill_effect = Char_Effect()
+                    skill_effect.x = obj_stone.x
+                    skill_effect.y = obj_stone.y
+                    effects.append(skill_effect)
+            for obj_mon in mons:
+                if collide(skill_fireball, obj_mon):
+                    mons.remove(obj_mon)
+                    fireballs.remove(skill_fireball)
+                    hero.hit()
+                    skill_effect = Char_Effect()
+                    skill_effect.x = obj_mon.x
+                    skill_effect.y = obj_mon.y
+                    effects.append(skill_effect)
+            for obj_boom in booms:
+                if collide(skill_fireball, obj_boom):
+                    fireballs.remove(skill_fireball)
+                    hero.hit()
+                    skill_effect = Char_Effect()
+                    skill_effect.x = obj_boom.x
+                    skill_effect.y = obj_boom.y
+                    effects.append(skill_effect)
+            if isBoss:
+                if collide(skill_fireball, boss):
+                    fireballs.remove(skill_fireball)
+                    hero.hit()
+                    skill_effect = Char_Effect()
+                    skill_effect.x = boss.x
+                    skill_effect.y = boss.y
+                    effects.append(skill_effect)
+                    boss.hp.degree -= 50
+
+        if boss.state == boss.DEATH:
+            game_framework.quit()
+
+    for skill_effect in effects:
+        skill_effect.update(frame_time, isBoss)
+
+        if skill_effect.frame >= 5:
+            effects.remove(skill_effect)
 
 def draw_scene(frame_time):
     view.draw()
     ground.draw()
     hero.draw()
-    tired.draw()
     boss.draw()
     for obj_stone in stones:
         obj_stone.draw()
@@ -277,9 +297,12 @@ def draw_scene(frame_time):
         obj_drink.draw()
     for skill_fireball in fireballs:
         skill_fireball.draw()
+    for skill_effect in effects:
+        skill_effect.draw()
 
     if collide_box_on:
         hero.draw_bb()
+        boss.draw_bb()
         for obj_stone in stones:
             obj_stone.draw_bb()
         for obj_mon in mons:

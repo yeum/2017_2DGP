@@ -27,8 +27,6 @@ class Fireball:
 
     def update(self, frame_time, isBoss):
         distance = Fireball.RUN_SPEED_PPS * frame_time
-        if isBoss:
-            distance /= 3
         self.total_frames += Fireball.FRAMES_PER_ACTION * Fireball.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 4
         self.x += distance
@@ -40,7 +38,49 @@ class Fireball:
         draw_rectangle(*self.get_bb())
 
     def get_bb(self):
-        return self.x - 25, self.y - 15, self.x + 10, self.y + 15
+        return self.x - 60, self.y - 20, self.x + 60, self.y + 20
+
+class Char_Tired:
+    image = None
+
+    def __init__(self):
+        self.x, self.y = 0, 0
+        self.degree = 0
+        if Char_Tired.image == None:
+            Char_Tired.image = load_image('tired.png')
+
+    def draw(self):
+        self.image.clip_draw(0, 0, self.degree, 20, self.x, self.y)
+
+class Char_Effect:
+    image = None
+
+    PIXEL_PER_METER = (10.0 / 0.2)  # 10 pixel 20 cm
+    RUN_SPEED_KMPH = 15.0  # Km / Hour
+    RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
+    RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
+    RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
+
+    TIME_PER_ACTION = 0.5
+    ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
+    FRAMES_PER_ACTION = 6
+
+    def __init__(self):
+        self.x, self.y = 0, 0
+        self.frame = 0
+        self.total_frames = 0.0
+        if Char_Effect.image == None:
+            Char_Effect.image = load_image('effect_hit.png')
+
+    def update(self, frame_time, isBoss):
+        distance = Char_Effect.RUN_SPEED_PPS * frame_time
+        self.total_frames += Char_Effect.FRAMES_PER_ACTION * Char_Effect.ACTION_PER_TIME * frame_time
+        self.frame = int(self.total_frames) % 6
+        if isBoss == None:
+            self.x -= distance
+
+    def draw(self):
+        self.image.clip_draw(self.frame * 100, 0, 100, 100, self.x, self.y)
 
 
 class Hero:
@@ -68,6 +108,9 @@ class Hero:
         self.dir = 0
         self.state = self.RIGHT_RUN
         self.y_for_collide = 35
+        self.tired = Char_Tired()
+        self.tired.x, self.tired.y = self.x, self.y + 50
+
         if Hero.image == None:
             Hero.image = load_image('character_sheet2.png')
         if Hero.hit_sound == None:
@@ -80,10 +123,10 @@ class Hero:
             Hero.crush_sound = load_wav('increase.wav')
             Hero.crush_sound.set_volume(32)
 
-    def hit(self, skill_fireball):
+    def hit(self):
         self.hit_sound.play()
 
-    def eat(self, obj_drink):
+    def eat(self):
         self.eat_sound.play()
 
     def crush(self):
@@ -98,7 +141,9 @@ class Hero:
         distance = Hero.RUN_SPEED_PPS * frame_time
         self.total_frames += Hero.FRAMES_PER_ACTION * Hero.ACTION_PER_TIME * frame_time
         self.frame = int(self.total_frames) % 4
-        self.x += (self.dir * distance)
+
+        if self.state not in (self.RIGHT_DEATH, self.LEFT_DEATH):
+            self.x += (self.dir * distance)
 
         self.x = clamp(0, self.x, 800)
 
@@ -109,12 +154,21 @@ class Hero:
             else:
                 self.y += distance+0.3
 
+        self.tired.x, self.tired.y = self.x - (50 - self.tired.degree / 2), self.y + 50
+
+        if self.tired.degree >= 100:
+            if self.state in (self.RIGHT_RUN, self.RIGHT_STAND):
+                self.state = self.RIGHT_DEATH
+            elif self.state in (self.LEFT_RUN, self.LEFT_STAND):
+                self.state = self.LEFT_DEATH
+
     def get_height(self):
         return self.y
 
 
     def draw(self):
         self.image.clip_draw(self.frame * 70, self.state * 70, 70, 70, self.x, self.y)
+        self.tired.draw()
 
     def draw_bb(self):
         draw_rectangle(*self.get_bb())
