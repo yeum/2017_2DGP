@@ -17,9 +17,11 @@ hero = None
 ground = None
 view = None
 isBoss = None
+isClear = None
 collide_box_on = None
 
 fireballs = []
+boss_fireballs = []
 effects = []
 
 class Stone:
@@ -137,8 +139,35 @@ class Monster:
     def get_bb(self):
         return self.x - 25, self.y - 15, self.x + 10, self.y + 15
 
+class Clear:
+    image = None
+
+    def __init__(self):
+        self.x, self.y = 400, 400
+        if Clear.image == None:
+            Clear.image = load_image('clear.png')
+
+    def draw(self):
+        self.image.draw(self.x, self.y)
+
+class Fail:
+    image = None
+
+    def __init__(self):
+        self.x, self.y = 400, 400
+        if Fail.image == None:
+            Fail.image = load_image('fail.png')
+
+    def draw(self):
+        self.image.draw(self.x, self.y)
+
+
 def enter():
-    global hero, ground, view, stones, mons, drinks, booms, boss
+    global hero, ground, view, stones, mons, drinks, booms, boss, isBoss, isClear, clear, fail
+    clear = Clear()
+    fail = Fail()
+    isBoss = None
+    isClear = None
     stones = create_stones()
     mons = create_mons()
     drinks = create_drinks()
@@ -150,11 +179,13 @@ def enter():
 
 
 def exit():
-    global hero, ground, view, mons, stones, booms, drinks, fireballs, boss, effects
+    global hero, ground, view, mons, stones, booms, drinks, fireballs, boss, effects, boss_fireballs, clear, fail
     del(hero)
     del(ground)
     del(view)
     del(boss)
+    del(clear)
+    del(fail)
     for obj_mon in mons:
         del(obj_mon)
     for obj_stone in stones:
@@ -167,6 +198,8 @@ def exit():
         del(skill_fireball)
     for skill_effect in effects:
         del(skill_effect)
+    for boss_fireball in boss_fireballs:
+        del(boss_fireball)
 
 def handle_events(frame_time):
     global isBoss, collide_box_on, fireballs
@@ -186,7 +219,7 @@ def handle_events(frame_time):
                 hero.handle_event(event, isBoss, fireballs)
 
 def update(frame_time):
-    global isBoss
+    global isBoss, isClear
 
     if view.x <= -950:
         isBoss = True
@@ -195,9 +228,11 @@ def update(frame_time):
 
 
     if hero.state not in (hero.RIGHT_DEATH, hero.LEFT_DEATH):
-        boss.update(frame_time, isBoss)
         ground.update(frame_time, isBoss)
         view.update(frame_time, isBoss)
+
+        if isClear == None:
+            boss.update(frame_time, isBoss, boss_fireballs, hero)
 
         for obj_stone in stones:
             if collide(hero, obj_stone):
@@ -236,6 +271,8 @@ def update(frame_time):
         for skill_fireball in fireballs:
             skill_fireball.update(frame_time, isBoss)
 
+        for boss_fireball in boss_fireballs:
+            boss_fireball.update(frame_time, isBoss)
 
         for skill_fireball in fireballs:
             for obj_stone in stones:
@@ -273,8 +310,14 @@ def update(frame_time):
                     effects.append(skill_effect)
                     boss.hp.degree -= 50
 
+        for boss_fireball in boss_fireballs:
+            if collide(boss_fireball, hero):
+                boss_fireballs.remove(boss_fireball)
+                hero.crush()
+                hero.tired.degree += 20
+
         if boss.state == boss.DEATH:
-            game_framework.quit()
+            isClear = True
 
     for skill_effect in effects:
         skill_effect.update(frame_time, isBoss)
@@ -283,10 +326,13 @@ def update(frame_time):
             effects.remove(skill_effect)
 
 def draw_scene(frame_time):
+    global isClear
+
     view.draw()
     ground.draw()
     hero.draw()
-    boss.draw()
+    if isClear == None:
+        boss.draw()
     for obj_stone in stones:
         obj_stone.draw()
     for obj_mon in mons:
@@ -299,6 +345,8 @@ def draw_scene(frame_time):
         skill_fireball.draw()
     for skill_effect in effects:
         skill_effect.draw()
+    for boss_fireball in boss_fireballs:
+        boss_fireball.draw()
 
     if collide_box_on:
         hero.draw_bb()
@@ -313,6 +361,13 @@ def draw_scene(frame_time):
             obj_drink.draw_bb()
         for fireball in fireballs:
             fireball.draw_bb()
+        for boss_fireball in boss_fireballs:
+            boss_fireball.draw_bb()
+
+    if hero.state in (hero.RIGHT_DEATH, hero.LEFT_DEATH):
+        fail.draw()
+    if isClear:
+        clear.draw()
 
 def draw(frame_time):
     clear_canvas()

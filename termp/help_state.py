@@ -1,28 +1,26 @@
 # 시작화면, 난이도 선택
 
 import game_framework
-import help_state
+import main_state
 from pico2d import *
 
 from hero import Hero
 
-name = "StartState"
+name = "HelpState"
 image = None
 
 hero = None
 
 def create_world():
-    global hero
-    hero = Hero()
+    pass
 
 def destroy_world():
-    global hero
-    del(hero)
+    pass
 
 def enter():
     global image
     game_framework.reset_time()
-    image = load_image('start.png')
+    image = load_image('help.png')
     create_world()
 
 
@@ -48,7 +46,7 @@ def handle_events(frame_time):
             if (event.type, event.key) == (SDL_KEYDOWN, SDLK_ESCAPE):
                 game_framework.quit()
             elif (event.type, event.key) == (SDL_KEYDOWN, SDLK_SPACE):
-                game_framework.change_state(help_state)
+                game_framework.change_state(main_state)
 
 
 
